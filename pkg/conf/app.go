@@ -9,6 +9,8 @@ var Host = ""
 var Port = 10000
 var Addr = fmt.Sprintf("%s:%d", Host, Port)
 
+var ShowHiddenFile = false
+
 // built-in directories
 var HomeDir = util.GetHomeDirectory()
 var PublicDir = HomeDir + "/Public"

@@ -1,7 +1,9 @@
 package models
 
 import (
+	"github.com/xavier-niu/webserver/pkg/conf"
 	"os"
+	"unicode/utf8"
 )
 
 const (
@@ -14,6 +16,7 @@ type FileItem struct {
 	Name     string
 }
 
+//goland:noinspection ALL
 func ListDir(path string) ([]FileItem, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -31,6 +34,12 @@ func ListDir(path string) ([]FileItem, error) {
 
 	for _, fileInfo := range files {
 		name := fileInfo.Name()
+		if !conf.ShowHiddenFile {
+			_, i := utf8.DecodeRuneInString(name)
+			if name[0:i] == "." {
+				continue
+			}
+		}
 		itemType := FileType
 		if fileInfo.IsDir() {
 			itemType = DirectoryType
