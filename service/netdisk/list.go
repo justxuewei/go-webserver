@@ -1,57 +1,51 @@
 package netdisk
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/xavier-niu/webserver/pkg/conf"
+	"github.com/xavier-niu/webserver/models"
 	"github.com/xavier-niu/webserver/pkg/util"
-	"os"
-	"path/filepath"
+	"net/url"
+	"strings"
 )
 
-const (
-	FileType = iota
-	DirectoryType
-)
+type ListService struct{}
 
-type ListService struct {}
+type DownloadService struct{}
 
 type FileItem struct {
-	itemType int
-	path string
+	ItemType int
+	Name     string
+	Url      string
 }
 
-func (l *ListService) ListPublic(c *gin.Context) (string, *gin.H) {
-	pubDirInfo, err := os.Stat(conf.PublicDir)
-	if os.IsNotExist(err) {
-		h := gin.H{
-			"title": "No Authorization",
-			"error": "Public folder is not existed.",
-		}
-		return "error.html", &h
-	}
-	if !pubDirInfo.IsDir() {
-		h := gin.H{
-			"title": "Type Error",
-			"error": "Public should be a directory.",
-		}
-		return "error.html", &h
-	}
-	items := make([]*FileItem, 10)
-	visitFunc := func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			util.Log().Error("Visiting \"%s\" gets an error, %s", path, err)
-			return err
-		}
-		itemType := FileType
-		if info.IsDir() {
-			itemType = DirectoryType
-		}
-		item := FileItem{itemType: itemType, path: path}
-		items = append(items, &item)
-		return nil
-	}
-	err := filepath.Walk(conf.PublicDir, visitFunc)
+func (l *ListService) List(c *gin.Context, path string) (int, string, *gin.H) {
+	items, err := models.ListDir(path)
 	if err != nil {
-
+		util.Log().Error("Listing \"%s\" is failed, %s.", path, err)
+		return util.ErrorPage("List Error", "The directory could not be accessed.")
 	}
+
+	dirs := make([]FileItem, 0)
+	for _, item := range items {
+		name := item.Name
+		u := c.Request.RequestURI + name
+		itemType := item.ItemType
+		dirs = append(dirs, FileItem{ItemType: itemType, Name: name, Url: u})
+	}
+
+	dirName, _ := url.QueryUnescape(util.TrimFirstRune(c.Request.RequestURI))
+	return 200, "netdisk/list.html", &gin.H{
+		"title":   fmt.Sprintf("%s - NetDisk", dirName),
+		"dirName": dirName,
+		"dirs":    dirs,
+	}
+}
+
+func (dl *DownloadService) Download(c *gin.Context, path string) {
+	pathArr := strings.Split(path, "/")
+	filename := pathArr[len(pathArr)-1]
+	c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	c.Writer.Header().Add("Content-Type", "application/octet-stream")
+	c.File(path)
 }

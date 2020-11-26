@@ -8,13 +8,18 @@ import (
 
 func InitRouter() *gin.Engine {
 	r := gin.Default()
+	// static resources
+	r.LoadHTMLGlob("templates/**/*")
+
 	InitNetDiskRouter(r)
 	util.Log().Info("NetDisk routers are initialized.")
 	return r
 }
 
 func InitNetDiskRouter(r *gin.Engine) {
-	r.LoadHTMLGlob("templates/*")
-
-	r.GET("public", controllers.Public)
+	// router
+	{
+		// public directory
+		r.GET("/public/*subpath", controllers.Public)
+	}
 }
