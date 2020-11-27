@@ -29,7 +29,7 @@ func (l *ListService) List(c *gin.Context, path string) (int, string, *gin.H) {
 	dirs := make([]FileItem, 0)
 	for _, item := range items {
 		name := item.Name
-		u := c.Request.RequestURI + name
+		u := c.Request.RequestURI + "/" + name
 		itemType := item.ItemType
 		dirs = append(dirs, FileItem{ItemType: itemType, Name: name, Url: u})
 	}
